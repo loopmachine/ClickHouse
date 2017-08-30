@@ -150,7 +150,7 @@ MergeTreeData::MergeTreeData(
     String version_file_path = full_path + "format_version.txt";
     if (!attach)
     {
-        format_version = min_format_version;
+        format_version = MERGE_TREE_DATA_MIN_FORMAT_VERSION_WITH_CUSTOM_PARTITIONING;
         WriteBufferFromFile buf(version_file_path);
         writeIntText(format_version.toUnderType(), buf);
     }
