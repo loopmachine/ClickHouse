@@ -334,16 +334,10 @@ public:
     /// clearOldParts (ignoring old_parts_lifetime).
     void replaceParts(const DataPartsVector & remove, const DataPartsVector & add, bool clear_without_timeout);
 
-    /// Adds new part to the list of known parts and to the working set.
-    void attachPart(const DataPartPtr & part);
-
     /// Renames the part to detached/<prefix>_<part> and forgets about it. The data won't be deleted in
     /// clearOldParts.
     /// If restore_covered is true, adds to the working set inactive parts, which were merged into the deleted part.
     void renameAndDetachPart(const DataPartPtr & part, const String & prefix = "", bool restore_covered = false, bool move_to_detached = true);
-
-    /// Removes the part from the list of parts (including all_data_parts), but doesn't move the directory.
-    void detachPartInPlace(const DataPartPtr & part);
 
     /// Returns old inactive parts that can be deleted. At the same time removes them from the list of parts
     /// but not from the disk.

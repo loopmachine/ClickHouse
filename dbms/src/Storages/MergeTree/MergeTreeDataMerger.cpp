@@ -749,7 +749,6 @@ MergeTreeData::MutableDataPartPtr MergeTreeDataMerger::mergePartsToTemporaryPart
     new_data_part->size = to.marksCount();
     new_data_part->modification_time = time(nullptr);
     new_data_part->size_in_bytes = MergeTreeData::DataPart::calcTotalSize(new_part_tmp_path);
-    new_data_part->is_sharded = false;
 
     return new_data_part;
 }
@@ -1059,7 +1058,6 @@ MergeTreeData::PerShardDataParts MergeTreeDataMerger::reshardPartition(
         data_part->size = output_stream->marksCount();
         data_part->modification_time = time(nullptr);
         data_part->size_in_bytes = MergeTreeData::DataPart::calcTotalSize(output_stream->getPartPath());
-        data_part->is_sharded = true;
         data_part->shard_no = shard_no;
     }
 
