@@ -346,7 +346,7 @@ void StorageBuffer::shutdown()
 
     try
     {
-        optimize(nullptr /*query*/, {} /*partition_id*/, false /*final*/, false /*deduplicate*/, context.getSettings());
+        optimize(nullptr /*query*/, {} /*partition*/, false /*final*/, false /*deduplicate*/, context.getSettings());
     }
     catch (...)
     {
@@ -365,9 +365,9 @@ void StorageBuffer::shutdown()
   *
   * This kind of race condition make very hard to implement proper tests.
   */
-bool StorageBuffer::optimize(const ASTPtr & query, const String & partition_id, bool final, bool deduplicate, const Settings & settings)
+bool StorageBuffer::optimize(const ASTPtr & query, const ASTPtr & partition, bool final, bool deduplicate, const Settings & settings)
 {
-    if (!partition_id.empty())
+    if (partition)
         throw Exception("Partition cannot be specified when optimizing table of type Buffer", ErrorCodes::NOT_IMPLEMENTED);
 
     if (final)

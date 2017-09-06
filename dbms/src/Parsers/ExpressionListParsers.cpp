@@ -499,7 +499,7 @@ bool ParserUnaryMinusExpression::parseImpl(Pos & pos, ASTPtr & node, Expected & 
 
     if (pos->type == TokenType::Minus)
     {
-        ParserLiteral lit_p;
+        ParserAtomicLiteral lit_p;
         Pos begin = pos;
 
         if (lit_p.parse(pos, node, expected))

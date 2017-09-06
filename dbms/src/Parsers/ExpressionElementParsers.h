@@ -139,26 +139,36 @@ protected:
 };
 
 
-/** An array of literals.
+/** An atomic literal is one of: NULL, UInt64, Int64, Float64, String.
+  */
+class ParserAtomicLiteral : public IParserBase
+{
+protected:
+    const char * getName() const { return "atomic literal"; }
+    bool parseImpl(Pos & pos, ASTPtr & node, Expected & expected);
+};
+
+
+/** Any literal, possibly one of Tuple or Array with arbitrary level of nesting.
+  */
+class ParserAnyLiteral : public IParserBase
+{
+protected:
+    const char * getName() const { return "any literal"; }
+    bool parseImpl(Pos & pos, ASTPtr & node, Expected & expected);
+};
+
+
+/** An array of atomic literals.
   * Arrays can also be parsed as an application of [] operator.
   * But parsing the whole array as a whole constant seriously speeds up the analysis of expressions in the case of very large arrays.
   * We try to parse the array as an array of literals first (fast path),
   *  and if it did not work out (when the array consists of complex expressions) - parse as an application of [] operator (slow path).
   */
-class ParserArrayOfLiterals : public IParserBase
+class ParserArrayOfAtomicLiterals : public IParserBase
 {
 protected:
     const char * getName() const { return "array"; }
-    bool parseImpl(Pos & pos, ASTPtr & node, Expected & expected);
-};
-
-
-/** The literal is one of: NULL, UInt64, Int64, Float64, String.
-  */
-class ParserLiteral : public IParserBase
-{
-protected:
-    const char * getName() const { return "literal"; }
     bool parseImpl(Pos & pos, ASTPtr & node, Expected & expected);
 };
 

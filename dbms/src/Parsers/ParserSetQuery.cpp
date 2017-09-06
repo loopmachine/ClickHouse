@@ -16,7 +16,7 @@ namespace DB
 static bool parseNameValuePair(ASTSetQuery::Change & change, IParser::Pos & pos, Expected & expected)
 {
     ParserIdentifier name_p;
-    ParserLiteral value_p;
+    ParserAtomicLiteral value_p;
     ParserToken s_eq(TokenType::Equals);
 
     ASTPtr name;

@@ -498,6 +498,8 @@ bool ParserStringLiteral::parseImpl(Pos & pos, ASTPtr & node, Expected & expecte
     if (pos->type != TokenType::StringLiteral)
         return false;
 
+    Pos begin = pos;
+
     String s;
     ReadBufferFromMemory in(pos->begin, pos->size());
 
@@ -518,12 +520,86 @@ bool ParserStringLiteral::parseImpl(Pos & pos, ASTPtr & node, Expected & expecte
     }
 
     ++pos;
-    node = std::make_shared<ASTLiteral>(StringRange(pos->begin, pos->end), s);
+    node = std::make_shared<ASTLiteral>(StringRange(begin, pos), s);
     return true;
 }
 
 
-bool ParserArrayOfLiterals::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
+bool ParserAtomicLiteral::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
+{
+    ParserNull null_p;
+    ParserNumber num_p;
+    ParserStringLiteral str_p;
+
+    if (null_p.parse(pos, node, expected))
+        return true;
+
+    if (num_p.parse(pos, node, expected))
+        return true;
+
+    if (str_p.parse(pos, node, expected))
+        return true;
+
+    return false;
+}
+
+
+bool ParserAnyLiteral::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
+{
+    ParserAtomicLiteral atomic_literal_p;
+    if (atomic_literal_p.parse(pos, node, expected))
+        return true;
+
+    Pos begin = pos;
+
+    TokenType expected_closing_bracket;
+    const char * expected_bracket_str;
+    if (pos->type == TokenType::OpeningSquareBracket)
+    {
+        expected_closing_bracket = TokenType::ClosingSquareBracket;
+        expected_bracket_str = "closing square bracket";
+    }
+    else if (pos->type == TokenType::OpeningRoundBracket)
+    {
+        expected_closing_bracket = TokenType::ClosingRoundBracket;
+        expected_bracket_str = "closing round bracket";
+    }
+    else
+        return false;
+
+    ++pos;
+
+    ParserList list_p(
+        std::make_unique<ParserAnyLiteral>(), std::make_unique<ParserToken>(TokenType::Comma),
+        /* allow_empty = */ true);
+
+    ASTPtr list;
+    if (!list_p.parse(pos, list, expected))
+        return false;
+
+    if (pos->type != expected_closing_bracket)
+    {
+        expected.add(pos, expected_bracket_str);
+        return false;
+    }
+
+    ++pos;
+
+    auto function_ast = std::make_shared<ASTFunction>(StringRange(begin, pos));
+    function_ast->arguments = list;
+    function_ast->children.push_back(list);
+
+    if (expected_closing_bracket == TokenType::ClosingSquareBracket)
+        function_ast->name = "array";
+    else if (expected_closing_bracket == TokenType::ClosingRoundBracket)
+        function_ast->name = "tuple";
+
+    node = function_ast;
+    return true;
+}
+
+
+bool ParserArrayOfAtomicLiterals::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
 {
     if (pos->type != TokenType::OpeningSquareBracket)
         return false;
@@ -531,7 +607,7 @@ bool ParserArrayOfLiterals::parseImpl(Pos & pos, ASTPtr & node, Expected & expec
     Pos begin = pos;
     Array arr;
 
-    ParserLiteral literal_p;
+    ParserAtomicLiteral literal_p;
 
     ++pos;
 
@@ -564,25 +640,6 @@ bool ParserArrayOfLiterals::parseImpl(Pos & pos, ASTPtr & node, Expected & expec
     }
 
     expected.add(pos, "closing square bracket");
-    return false;
-}
-
-
-bool ParserLiteral::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
-{
-    ParserNull null_p;
-    ParserNumber num_p;
-    ParserStringLiteral str_p;
-
-    if (null_p.parse(pos, node, expected))
-        return true;
-
-    if (num_p.parse(pos, node, expected))
-        return true;
-
-    if (str_p.parse(pos, node, expected))
-        return true;
-
     return false;
 }
 
@@ -692,8 +749,8 @@ bool ParserExpressionElement::parseImpl(Pos & pos, ASTPtr & node, Expected & exp
     ParserParenthesisExpression paren_p;
     ParserSubquery subquery_p;
     ParserArray array_p;
-    ParserArrayOfLiterals array_lite_p;
-    ParserLiteral lit_p;
+    ParserArrayOfAtomicLiterals array_lite_p;
+    ParserAtomicLiteral lit_p;
     ParserCastExpression fun_p;
     ParserCompoundIdentifier id_p;
     ParserAsterisk asterisk_p;
